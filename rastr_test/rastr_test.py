@@ -54,7 +54,7 @@ class LoadMap:
     def check_assert(self):
         for load in self.loads_:
             if load.const_ or load.pmax_ - load.pmin_ < 1e-6:
-                raise Exception(f"Нагрузка {self.verbal_name()}")
+                raise Exception(f"Нагрузка {load.verbal_name()}")
 
 
 class Territory(Identified):
