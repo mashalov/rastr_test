@@ -333,7 +333,7 @@ for iteration in range(1, 8):
             # print(f"Нагрузка {load.id_}: было {load.pbase_:.3f} -> стало {res.x[i]:.3f}")
             load_p.set_z(load.index_, res.x[i])
         if rastr.rgm() == astra.ASTCode.OK:
-            rastr.save("e:/temp/result.os", template_file)
+            # rastr.save("e:/temp/result.os", template_file)
             max_diff = 0.0
             for area, area_target in zip(areas, area_targets):
                 p = area.p_result()
