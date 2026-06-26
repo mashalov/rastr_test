@@ -24,6 +24,29 @@ def transliterate(text: str) -> str:
         text = f"val_{text}"
     return text or "empty"
 
+enpic_map = {
+    ("vetv","sta"): {
+        "enum_items" : ["Вкл", "Откл", "Откл в начале", "Откл в конце"],
+        "enum_keys" : ["On", "Off", "TripHead", "TripTail"],
+        "enum_name" : "BrachStateEnum"
+        },
+     ("vetv","signP"): {
+        "enum_items" : ["От шин", "В шины"],
+        "enum_keys" : ["HeadTail", "TailHead"],
+        "enum_name" : "BrachActivePowerDirectionEnum"
+        },
+     ("vetv","signQip"): {
+        "enum_items" : ["От шин", "В шины"],
+        "enum_keys" : ["HeadTail", "TailHead"],
+        "enum_name" : "BrachHeadReactivePowerDirectionEnum"
+        },
+     ("vetv","signQiq"): {
+        "enum_items" : ["От шин", "В шины"],
+        "enum_keys" : ["HeadTail", "TailHead"],
+        "enum_name" : "BrachTailReactivePowerDirectionEnum"
+        }
+    }
+
 def generate_model() -> json:
     rastr = astra.Rastr()
     json_schema = {
@@ -47,10 +70,9 @@ def generate_model() -> json:
         astra.PropType.DOUBLE: "number",
         astra.PropType.STRING: "string",
         astra.PropType.BOOL: "boolean",
-        astra.PropType.ENUM: "string"
         }
 
-    rastr.new_file("d:/documents/rastrwin3\shablon\режим.rg2")
+    rastr.new_file("d:/documents/rastrwin3\shablon\poisk.os")
     for table in rastr.tables():
         table_keys = table.key.split(",")
         table_data = {
@@ -76,32 +98,51 @@ def generate_model() -> json:
                 if read_only_field:
                     continue
 
+            field_data = {}
+
+            field_description = field.property(astra.FieldProperties.DESCRIPTION)
+            field_title = field.property(astra.FieldProperties.TITLE)
+            if field_description:
+                field_data["description"] = field_description
+            if field_title:
+                field_data["title"] = field_title
 
             if field.type in type_map:
-                field_data = {
-                    "description" : field.property(astra.FieldProperties.DESCRIPTION),
-                    "title" : field.property(astra.FieldProperties.TITLE),
-                }
-                if field.type == astra.PropType.ENUM:
-                    enum_items = field.property(astra.FieldProperties.NAMEREF).split("|")
-                    enum_name = f"{table.name}{field.name}Enum"
-                
+                field_data["type"] = type_map[field.type]
+            else:
+                enum_items = None
+                enum_name = None
+                enum_keys = None
+                match field.type:
+                    case astra.PropType.ENUM:
+                        enum_items = field.property(astra.FieldProperties.NAMEREF).split("|")
+                        enum_name = f"{table.name}{field.name}Enum"
+                        enum_keys = [transliterate(x) for x in enum_items]
+                    case astra.PropType.ENPIC:
+                        enpic_info = enpic_map.get((table.name, field.name), None)
+                        if enpic_info:
+                            enum_items = enpic_info["enum_items"]
+                            enum_name = enpic_info["enum_name"]
+                            enum_keys = enpic_info["enum_keys"]
+                        else:
+                            print(f"Enpic {table.name}.{field.name}")
+                    case astra.PropType.SUPERENUM:
+                        print(f"Superenum {table.name}.{field.name}")
+
+                if enum_items:
                     json_schema["$defs"][enum_name] = {
-                        "type": "string",
-                        "title": enum_name,
-                        "enum": enum_items,
-                        "x-enum-varnames": [transliterate(x) for x in enum_items]
-                    }
+                            "type": "string",
+                            "title": enum_name,
+                            "enum": enum_items,
+                            "x-enum-varnames": enum_keys
+                        }
                     field_data["$ref"] = f"#/$defs/{enum_name}"
-                else:
-                    field_data["type"] = type_map[field.type]
 
-
-                fields_data[field.name] = field_data
-                add_to_required |= field.type == astra.PropType.BOOL
-                add_to_required |= len(field.property(astra.FieldProperties.NAMEREF)) and field.type == astra.PropType.INT
-                if add_to_required:
-                    required.append(field.name)
+            fields_data[field.name] = field_data
+            add_to_required |= field.type == astra.PropType.BOOL
+            add_to_required |= len(field.property(astra.FieldProperties.NAMEREF)) and field.type == astra.PropType.INT
+            if add_to_required:
+                required.append(field.name)
                         
         table_data["properties"] = fields_data
         table_data["required"] = required
