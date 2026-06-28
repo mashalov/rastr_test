@@ -1,6 +1,6 @@
-﻿import json
+﻿from ast import Pass
+import json
 from datamodel_code_generator import InputFileType, generate
-# 1. Импортируем перечисление Formatter и PythonVersion
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.types import PythonVersion
 import re
@@ -8,6 +8,12 @@ import astra
 
 
 mode_from_rastr = True
+
+export_limits = {
+    "tables": {
+        "exclude" : ["DFWReferenceValues"]
+        }
+}
 
 
 def transliterate(text: str) -> str:
@@ -28,22 +34,22 @@ enpic_map = {
     ("vetv","sta"): {
         "enum_items" : ["Вкл", "Откл", "Откл в начале", "Откл в конце"],
         "enum_keys" : ["On", "Off", "TripHead", "TripTail"],
-        "enum_name" : "BrachStateEnum"
+        "enum_name" : "BranchStateEnum"
         },
      ("vetv","signP"): {
         "enum_items" : ["От шин", "В шины"],
         "enum_keys" : ["HeadTail", "TailHead"],
-        "enum_name" : "BrachActivePowerDirectionEnum"
+        "enum_name" : "BranchActivePowerDirectionEnum"
         },
      ("vetv","signQip"): {
         "enum_items" : ["От шин", "В шины"],
         "enum_keys" : ["HeadTail", "TailHead"],
-        "enum_name" : "BrachHeadReactivePowerDirectionEnum"
+        "enum_name" : "BranchHeadReactivePowerDirectionEnum"
         },
      ("vetv","signQiq"): {
         "enum_items" : ["От шин", "В шины"],
         "enum_keys" : ["HeadTail", "TailHead"],
-        "enum_name" : "BrachTailReactivePowerDirectionEnum"
+        "enum_name" : "BranchTailReactivePowerDirectionEnum"
         }
     }
 
@@ -53,6 +59,7 @@ def generate_model() -> json:
     "$schema": "http://json-schema.org",
     "title": "RastrModel",
     "type": "object",
+    "x-pydantic": {"populate_by_name": True}, 
     "properties": {
         "version": {
                 "type": "string",
@@ -74,6 +81,10 @@ def generate_model() -> json:
 
     rastr.new_file("d:/documents/rastrwin3\shablon\poisk.os")
     for table in rastr.tables():
+
+        if table.name in export_limits["tables"]["exclude"]:
+            continue
+
         table_keys = table.key.split(",")
         table_data = {
             "type": "object",
@@ -127,7 +138,8 @@ def generate_model() -> json:
                         else:
                             print(f"Enpic {table.name}.{field.name}")
                     case astra.PropType.SUPERENUM:
-                        print(f"Superenum {table.name}.{field.name}")
+                        pass
+                        #print(f"Superenum {table.name}.{field.name}")
 
                 if enum_items:
                     json_schema["$defs"][enum_name] = {
@@ -155,7 +167,9 @@ def generate_model() -> json:
         input_file_type=InputFileType.JsonSchema,
         output_model_type="pydantic_v2.BaseModel",
         target_python_version=PythonVersion.PY_310,
-        formatters=[Formatter.BLACK, Formatter.ISORT]
+        formatters=[Formatter.BLACK, Formatter.ISORT],
+        allow_population_by_field_name=True 
+
     )
     with open("models.py", "w", encoding="utf-8") as f:
 

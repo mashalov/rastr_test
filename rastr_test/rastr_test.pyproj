@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>cafce7ae-a769-4aac-b2b8-4c5a6a06cb4e</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>generate_pydantic_models.py</StartupFile>
+    <StartupFile>export.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -24,6 +24,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="export.py" />
     <Compile Include="generate_pydantic_models.py" />
     <Compile Include="rastr_test.py" />
   </ItemGroup>
